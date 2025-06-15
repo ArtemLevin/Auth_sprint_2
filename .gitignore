@@ -1,0 +1,157 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.db
+*.sqlite3
+*.log
+*.pot
+*.mo
+*.po
+MANIFEST
+.DS_Store
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+ENV.bak/
+
+# Virtual Environment
+.Python
+env/
+venv/
+virtualenv/
+.pyenv/
+.python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE / Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+*.kdev4
+*.directory
+*.code-workspace
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.dockerenv
+docker-compose.override.yml
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local development config
+.env
+.env.*
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.rej
+
+# Pytest
+__pycache__
+.pytest_cache/
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+nose2-results/
+unit.cap
+func.cap
+
+# FastAPI + Uvicorn
+*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.pot
+*.mo
+*.po
+MANIFEST
+.DS_Store
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+ENV.bak/
+
+# Alembic
+alembic/versions/*.py
+*.pyc
+__pycache__
+
+# Editor files
+*.swp
+*.swo
+*.swn
+.*.swp
+.*.swo
+.*.swn
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon?
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.fseventsd
+.Metadata
+.TemporaryItems
+.Trashes
+Network Trash Folder
+Temporary Items
+.apdisk
