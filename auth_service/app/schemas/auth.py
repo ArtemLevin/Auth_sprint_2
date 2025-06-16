@@ -1,6 +1,12 @@
 from pydantic import BaseModel
+from datetime import datetime
 from typing import Optional, Annotated
 from annotated_types import MaxLen, MinLen
+
+
+class TokenData(BaseModel):
+    user_id: str
+    exp: Optional[datetime] = None
 
 
 class TokenPair(BaseModel):

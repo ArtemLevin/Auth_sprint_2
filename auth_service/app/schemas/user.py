@@ -13,11 +13,6 @@ class UserCreate(UserBase):
     password: Annotated[str, MinLen(6)]
 
 
-class ChangePasswordRequest(BaseModel):
-    old_password: str
-    new_password: Annotated[str, MinLen(6)]
-
-
 class UpdateProfileRequest(BaseModel):
     login: Optional[Annotated[str, MaxLen(50)]] = None
     password: Optional[Annotated[str, MinLen(6)]] = None
