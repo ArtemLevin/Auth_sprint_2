@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, Request
 from typing import Dict
-from app.core.security import decode_jwt
-from app.utils.cache import redis_client
+from auth_service.app.core.security import decode_jwt
+from auth_service.app.utils.cache import redis_client
 
 async def get_token(request: Request) -> str:
     auth_header = request.headers.get("Authorization")

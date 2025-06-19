@@ -155,3 +155,9 @@ Icon?
 Network Trash Folder
 Temporary Items
 .apdisk
+
+create_github_issues.sh
+create_labels.sh
+dev1_issues.yaml
+dev2_issues.yaml
+dev3_issues.yaml
