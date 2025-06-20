@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     )
 
     LOG_LEVEL: str = "INFO"
-    LOG_FILE: Optional[str] = None
+    LOG_FILE: str | None = None
     LOG_JSON_FORMAT: bool = False
     LOG_ROTATION: str = "10 MB"
     LOG_RETENTION: str = "7 days"

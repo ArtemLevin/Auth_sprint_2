@@ -3,9 +3,10 @@ from uuid import UUID
 
 import structlog
 from fastapi import Depends, HTTPException, Request, status
-from jose import jwt
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from jose.exceptions import ExpiredSignatureError, JWTError
 
 from auth_service.app.core.security import decode_jwt, is_token_blacklisted
 from auth_service.app.db.session import get_db_session
@@ -121,12 +122,12 @@ async def get_current_user(
             "permissions": permissions,
         }
 
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         logger.warning("Токен истек")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
         )
-    except jwt.InvalidTokenError:
+    except JWTError:
         logger.warning("Неверный токен")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
