@@ -13,14 +13,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=TokenPair)
 async def login(request_data: LoginRequest, db: AsyncSession = Depends(get_db_session)):
-    user: User | None = await authenticate_user(
-        request_data.login, request_data.password, db
-    )
+    user: User | None = await authenticate_user(request_data.login, request_data.password, db)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect login or password",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect login or password")
 
     access_token = create_access_token(subject=user.id, payload={"login": user.login})
     refresh_token = create_refresh_token(subject=user.id)

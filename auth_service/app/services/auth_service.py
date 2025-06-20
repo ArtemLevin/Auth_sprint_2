@@ -24,5 +24,5 @@ class AuthService:
             return {"access_token": access_token, "refresh_token": refresh_token}
 
     @staticmethod
-    async def register(login: str, password: str, email: str = None):
+    async def register(login: str, password: str, email: str | None = None):
         pass
