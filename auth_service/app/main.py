@@ -1,8 +1,10 @@
 import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from typing import TYPE_CHECKING, cast
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from fastapi.responses import JSONResponse # Для кастомного обработчика исключений
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_ipaddr
 
@@ -13,11 +15,20 @@ from auth_service.app.core.logging_config import setup_logging
 
 logger = structlog.get_logger(__name__)
 
+# Определяем временный тип для app.state, чтобы добавить атрибут limiter
+if TYPE_CHECKING:
+    from starlette.datastructures import State as StarletteState
+    class AppStateWithLimiter(StarletteState):
+        limiter: Limiter
+else:
+    AppStateWithLimiter = object # Заглушка для runtime, если TYPE_CHECKING не True
+
 limiter = Limiter(
     key_func=get_ipaddr,
     default_limits=[settings.RATE_LIMIT_DEFAULT],
     storage_uri=settings.REDIS_URL.get_secret_value(),
 )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,8 +49,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Явно приводим тип app.state
+app.state = cast(AppStateWithLimiter, app.state)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Обработчик исключений для RateLimitExceeded
+async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
+    """
+    Обработчик исключений для превышения лимита запросов.
+    Возвращает JSON-ответ со статусом 429 Too Many Requests.
+    """
+    logger.warning("Превышен лимит запросов", ip_address=request.client.host, detail=exc.detail)
+    return JSONResponse(
+        {"detail": f"Rate limit exceeded: {exc.detail}"},
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+# Используем собственный обработчик
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,4 +78,3 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(roles.router, prefix=settings.API_V1_STR)
-
