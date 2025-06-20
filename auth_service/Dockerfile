@@ -1,21 +1,20 @@
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
 COPY requirements.txt .
-
-RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY --from=builder /root/.cache/pip /root/.cache/pip
-COPY --from=builder /usr/local /usr/local
-
+COPY --from=builder /install /usr/local
 COPY . .
 
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser /app
 
 USER appuser
 WORKDIR /app
