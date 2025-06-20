@@ -1,12 +1,13 @@
-from pydantic_settings import BaseSettings
-from pydantic import Field, SecretStr, field_validator
-from typing import Optional, List, Literal
+import os
+from typing import List, Literal, Optional
 
 from dotenv import load_dotenv
-import os
+from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings
 
 DOTENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 load_dotenv(DOTENV_PATH)
+
 
 class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
@@ -21,12 +22,17 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = False
 
     JWT_SECRET_KEY: SecretStr = Field(..., description="Secret key for access tokens")
-    JWT_REFRESH_SECRET_KEY: SecretStr = Field(..., description="Secret key for refresh tokens")
+    JWT_REFRESH_SECRET_KEY: SecretStr = Field(
+        ..., description="Secret key for refresh tokens"
+    )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    REDIS_URL: SecretStr = Field(default=SecretStr("redis://localhost:6379"), description="URL подключения к Redis")
+    REDIS_URL: SecretStr = Field(
+        default=SecretStr("redis://localhost:6379"),
+        description="URL подключения к Redis",
+    )
 
     LOG_LEVEL: str = "INFO"
     LOG_FILE: Optional[str] = None
@@ -41,17 +47,20 @@ class Settings(BaseSettings):
 
     MFA_TOTP_ISSUER: str = "OnlineCinema Auth"
 
-
     @field_validator("DATABASE_URL", mode="after")
     def check_database_url(cls, v):
         if not v.startswith(("postgresql+asyncpg://", "sqlite+aiosqlite://")):
-            raise ValueError("DATABASE_URL должен начинаться с postgresql+asyncpg:// или sqlite+aiosqlite://")
+            raise ValueError(
+                "DATABASE_URL должен начинаться с postgresql+asyncpg:// или sqlite+aiosqlite://"
+            )
         return v
 
     @field_validator("JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY", mode="after")
     def check_jwt_secrets(cls, v: SecretStr, info):
         if len(v.get_secret_value()) < 16:
-            raise ValueError(f"{info.field_name} должен быть длиной не менее 16 символов")
+            raise ValueError(
+                f"{info.field_name} должен быть длиной не менее 16 символов"
+            )
         return v
 
     @field_validator("REDIS_URL", mode="after")
@@ -65,4 +74,4 @@ class Settings(BaseSettings):
 settings = Settings()
 
 if __name__ == "__main__":
-    print(settings.model_dump(exclude={"JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY", "SMTP_PASSWORD"}))
+    print(settings.model_dump(exclude={"JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY"}))

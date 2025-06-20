@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime
 from uuid import UUID as PyUUID, uuid4
 from typing import List, Optional
@@ -5,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy import String, Boolean, DateTime, func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from auth_service.app.models.base import Base
 
 
 class User(Base):
@@ -24,4 +25,6 @@ class User(Base):
     )
 
     roles: Mapped[List["UserRole"]] = relationship("UserRole", back_populates="user")
-    history: Mapped[List["LoginHistory"]] = relationship("LoginHistory", back_populates="user")
+    history: Mapped[List["LoginHistory"]] = relationship(
+        "LoginHistory", back_populates="user"
+    )

@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.3.0  # Используйте последнюю версию black
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0  # Используйте последнюю версию pre-commit-hooks
+    hooks:
+      - id: check-ast
+      - id: check-docstring-first
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0  # Используйте последнюю версию mypy
+    hooks:
+      - id: mypy
+        exclude: ^tests/  # Исключите тесты, если необходимо
+        additional_dependencies:  # Добавьте необходимые зависимости
+          - types-requests
+          - types-redis
+          - types-SQLAlchemy
+          # Добавьте другие типы, если используете сторонние библиотеки без встроенных типов

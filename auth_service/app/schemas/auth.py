@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, Annotated
+from typing import Annotated, Optional
+
 from annotated_types import MaxLen, MinLen
+from pydantic import BaseModel
 
 
 class TokenData(BaseModel):

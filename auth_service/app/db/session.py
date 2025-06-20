@@ -1,16 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
-from auth_service.app.settings import get_settings
-
-settings = get_settings()
+from auth_service.app.settings import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
     echo=settings.DATABASE_ECHO,
-    pool_size=5,
-    max_overflow=10
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
 )
 
 AsyncDBSession = sessionmaker(
@@ -18,7 +16,7 @@ AsyncDBSession = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
     autoflush=False,
-    autocommit=False
+    autocommit=False,
 )
 
 
