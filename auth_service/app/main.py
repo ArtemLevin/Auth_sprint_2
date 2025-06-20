@@ -8,6 +8,9 @@ from slowapi.util import get_ipaddr
 from auth_service.app.api.v1.routes import auth, roles
 from auth_service.app.settings import settings
 from auth_service.app.utils.cache import redis_client, test_connection
+from auth_service.app.core.logging import setup_logging
+
+logger = structlog.get_logger(__name__)
 
 limiter = Limiter(
     key_func=get_ipaddr,
@@ -41,11 +44,12 @@ app.include_router(roles.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def startup_event():
-    print("Приложение запускается...")
+    setup_logging()
+    logger.info("Приложение запускается...")
     await test_connection()
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("Приложение завершает работу...")
+    logger.info("Приложение завершает работу...")
     await redis_client.close()

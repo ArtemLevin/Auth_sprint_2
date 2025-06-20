@@ -1,11 +1,14 @@
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Union, List, Any
-from uuid import UUID
+from typing import Optional, Dict, Union, Any
+from uuid import UUID, uuid4
 
 from auth_service.app.settings import settings
 from auth_service.app.utils.cache import redis_client
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -19,16 +22,14 @@ def get_password_hash(password: str) -> str:
 
 
 def generate_jti() -> str:
-    import uuid
-
-    return str(uuid.uuid4())
+    return str(uuid4())
 
 
 def create_access_token(
-    subject: Union[str, UUID],
-    payload: Optional[Dict[str, Any]] = None,
-    expires_minutes: Optional[int] = None,
-    mfa_verified: bool = False,
+        subject: UUID,
+        payload: Optional[Dict[str, Any]] = None,
+        expires_minutes: Optional[int] = None,
+        mfa_verified: bool = False,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -43,13 +44,14 @@ def create_access_token(
         settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
+    logger.debug("Создан access токен", user_id=subject, jti=jti)
     return encoded_jwt
 
 
 def create_refresh_token(
-    subject: Union[str, UUID],
-    payload: Optional[Dict[str, Any]] = None,
-    expires_days: Optional[int] = None,
+        subject: UUID,
+        payload: Optional[Dict[str, Any]] = None,
+        expires_days: Optional[int] = None,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -62,6 +64,7 @@ def create_refresh_token(
         settings.JWT_REFRESH_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
+    logger.debug("Создан refresh токен", user_id=subject, jti=jti)
     return encoded_jwt
 
 
@@ -72,23 +75,33 @@ async def is_token_blacklisted(jti: str) -> bool:
 
 async def add_to_blacklist(jti: str, ttl_seconds: int):
     await redis_client.setex(f"blacklist:{jti}", ttl_seconds, "1")
+    logger.info("Токен добавлен в черный список", jti=jti, ttl=ttl_seconds)
 
 
 async def decode_jwt(
-    token: str, refresh: bool = False, options: Optional[Dict] = None
+        token: str, refresh: bool = False, options: Optional[Dict] = None
 ) -> Dict:
     secret = (
         settings.JWT_REFRESH_SECRET_KEY.get_secret_value()
         if refresh
         else settings.JWT_SECRET_KEY.get_secret_value()
     )
-    decoded = jwt.decode(
-        token, secret, algorithms=[settings.JWT_ALGORITHM], options=options or {}
-    )
+    try:
+        decoded = jwt.decode(
+            token, secret, algorithms=[settings.JWT_ALGORITHM], options=options or {}
+        )
+    except jwt.ExpiredSignatureError:
+        logger.warning("Попытка декодировать истекший токен")
+        raise
+    except jwt.InvalidTokenError:
+        logger.warning("Попытка декодировать неверный токен")
+        raise
 
     jti = decoded.get("jti")
     if jti and not refresh:
         if await is_token_blacklisted(jti):
+            logger.warning("Попытка использовать токен из черного списка", jti=jti)
             raise ValueError("Token is blacklisted")
 
+    logger.debug("Токен успешно декодирован", jti=jti, refresh=refresh)
     return decoded

@@ -1,23 +1,27 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
 
-from auth_service.app.utils.auth import authenticate_user
-from auth_service.app.core.security import create_access_token, create_refresh_token
 from auth_service.app.db.session import get_db_session
 from auth_service.app.schemas import TokenPair, LoginRequest
-from auth_service.app.models.user import User
+from auth_service.app.services.auth_service import AuthService
 
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+async def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
+    return AuthService(db)
 
 @router.post("/login", response_model=TokenPair)
-async def login(request_data: LoginRequest, db: AsyncSession = Depends(get_db_session)):
-    user: User | None = await authenticate_user(request_data.login, request_data.password, db)
-    if not user:
+async def login(
+    request_data: LoginRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    tokens = await auth_service.login(request_data.login, request_data.password)
+    if not tokens:
+        logger.warning("Неудачная попытка входа", login=request_data.login)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect login or password")
 
-    access_token = create_access_token(subject=user.id, payload={"login": user.login})
-    refresh_token = create_refresh_token(subject=user.id)
-
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    logger.info("Пользователь успешно вошел в систему", login=request_data.login)
+    return tokens
