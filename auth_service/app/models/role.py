@@ -1,21 +1,14 @@
 from __future__ import annotations
-from datetime import datetime
-from uuid import UUID as PyUUID, uuid4
-from typing import List, Optional
-from auth_service.app.models.base import Base
 
-from sqlalchemy import (
-    String,
-    Text,
-    DateTime,
-    func,
-    ARRAY,
-)
-from sqlalchemy.orm import (
-    Mapped,
-    mapped_column,
-    relationship,
-)
+from datetime import datetime
+from typing import List, Optional
+from uuid import UUID as PyUUID
+from uuid import uuid4
+
+from sqlalchemy import ARRAY, DateTime, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from auth_service.app.models.base import Base
 
 
 class Role(Base):

@@ -1,6 +1,7 @@
 import aioredis
-from auth_service.app.settings import settings
 import structlog
+
+from auth_service.app.settings import settings
 
 logger = structlog.get_logger(__name__)
 

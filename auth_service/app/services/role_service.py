@@ -1,13 +1,15 @@
+from typing import List, Optional
+from uuid import UUID as PyUUID
+
+import structlog
+from sqlalchemy import delete, insert, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from auth_service.app.models.role import Role
 from auth_service.app.models.user import User
 from auth_service.app.models.user_role import UserRole
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import delete, update, insert
-from auth_service.app.schemas.role import RoleCreate, RoleUpdate, RoleResponse
-from uuid import UUID as PyUUID
-from typing import Optional, List
-import structlog
+from auth_service.app.schemas.role import RoleCreate, RoleResponse, RoleUpdate
 
 logger = structlog.get_logger(__name__)
 
@@ -21,7 +23,10 @@ class RoleService:
             select(Role).where(Role.name == role_data.name)
         )
         if existing_role.scalar_one_or_none():
-            logger.warning("Попытка создать роль с уже существующим именем", role_name=role_data.name)
+            logger.warning(
+                "Попытка создать роль с уже существующим именем",
+                role_name=role_data.name,
+            )
             raise ValueError(f"Role with name '{role_data.name}' already exists.")
 
         role = Role(**role_data.model_dump())
@@ -51,12 +56,14 @@ class RoleService:
         return role
 
     async def update_role(
-            self, role_id: str, role_update: RoleUpdate
+        self, role_id: str, role_update: RoleUpdate
     ) -> Optional[Role]:
         try:
             role_uuid = PyUUID(role_id)
         except ValueError:
-            logger.warning("Неверный формат UUID для role_id при обновлении", role_id=role_id)
+            logger.warning(
+                "Неверный формат UUID для role_id при обновлении", role_id=role_id
+            )
             return None
 
         role = await self.db_session.get(Role, role_uuid)
@@ -70,28 +77,35 @@ class RoleService:
                 select(Role).where(Role.name == update_data["name"])
             )
             if existing_role.scalar_one_or_none():
-                logger.warning("Попытка обновить роль на уже существующее имя", role_id=role_id,
-                               new_name=update_data["name"])
-                raise ValueError(f"Role with name '{update_data['name']}' already exists.")
+                logger.warning(
+                    "Попытка обновить роль на уже существующее имя",
+                    role_id=role_id,
+                    new_name=update_data["name"],
+                )
+                raise ValueError(
+                    f"Role with name '{update_data['name']}' already exists."
+                )
 
         for field, value in update_data.items():
             setattr(role, field, value)
 
         await self.db_session.commit()
         await self.db_session.refresh(role)
-        logger.info("Роль успешно обновлена", role_id=role.id, updated_fields=update_data.keys())
+        logger.info(
+            "Роль успешно обновлена", role_id=role.id, updated_fields=update_data.keys()
+        )
         return role
 
     async def delete_role(self, role_id: str) -> bool:
         try:
             role_uuid = PyUUID(role_id)
         except ValueError:
-            logger.warning("Неверный формат UUID для role_id при удалении", role_id=role_id)
+            logger.warning(
+                "Неверный формат UUID для role_id при удалении", role_id=role_id
+            )
             return False
 
-        result = await self.db_session.execute(
-            delete(Role).where(Role.id == role_uuid)
-        )
+        result = await self.db_session.execute(delete(Role).where(Role.id == role_uuid))
         await self.db_session.commit()
         if result.rowcount > 0:
             logger.info("Роль успешно удалена", role_id=role_id)
@@ -105,14 +119,21 @@ class RoleService:
             user_uuid = PyUUID(user_id)
             role_uuid = PyUUID(role_id)
         except ValueError:
-            logger.warning("Неверный формат UUID для user_id или role_id при назначении", user_id=user_id,
-                           role_id=role_id)
+            logger.warning(
+                "Неверный формат UUID для user_id или role_id при назначении",
+                user_id=user_id,
+                role_id=role_id,
+            )
             return False
 
         user_exists = await self.db_session.get(User, user_uuid)
         role_exists = await self.db_session.get(Role, role_uuid)
         if not user_exists or not role_exists:
-            logger.warning("Пользователь или роль не найдены для назначения", user_id=user_id, role_id=role_id)
+            logger.warning(
+                "Пользователь или роль не найдены для назначения",
+                user_id=user_id,
+                role_id=role_id,
+            )
             return False
 
         existing_assignment = await self.db_session.execute(
@@ -121,13 +142,19 @@ class RoleService:
             )
         )
         if existing_assignment.scalar_one_or_none():
-            logger.warning("Роль уже назначена этому пользователю", user_id=user_id, role_id=role_id)
+            logger.warning(
+                "Роль уже назначена этому пользователю",
+                user_id=user_id,
+                role_id=role_id,
+            )
             return False
 
         user_role = UserRole(user_id=user_uuid, role_id=role_uuid)
         self.db_session.add(user_role)
         await self.db_session.commit()
-        logger.info("Роль успешно назначена пользователю", user_id=user_id, role_id=role_id)
+        logger.info(
+            "Роль успешно назначена пользователю", user_id=user_id, role_id=role_id
+        )
         return True
 
     async def revoke_role_from_user(self, user_id: str, role_id: str) -> bool:
@@ -135,7 +162,11 @@ class RoleService:
             user_uuid = PyUUID(user_id)
             role_uuid = PyUUID(role_id)
         except ValueError:
-            logger.warning("Неверный формат UUID для user_id или role_id при отзыве", user_id=user_id, role_id=role_id)
+            logger.warning(
+                "Неверный формат UUID для user_id или role_id при отзыве",
+                user_id=user_id,
+                role_id=role_id,
+            )
             return False
 
         result = await self.db_session.execute(
@@ -145,17 +176,26 @@ class RoleService:
         )
         await self.db_session.commit()
         if result.rowcount > 0:
-            logger.info("Роль успешно отозвана у пользователя", user_id=user_id, role_id=role_id)
+            logger.info(
+                "Роль успешно отозвана у пользователя", user_id=user_id, role_id=role_id
+            )
             return True
         else:
-            logger.warning("Назначение роли не найдено для отзыва", user_id=user_id, role_id=role_id)
+            logger.warning(
+                "Назначение роли не найдено для отзыва",
+                user_id=user_id,
+                role_id=role_id,
+            )
             return False
 
     async def get_user_permissions(self, user_id: str) -> List[str]:
         try:
             user_uuid = PyUUID(user_id)
         except ValueError:
-            logger.warning("Неверный формат UUID для user_id при получении разрешений", user_id=user_id)
+            logger.warning(
+                "Неверный формат UUID для user_id при получении разрешений",
+                user_id=user_id,
+            )
             return []
 
         result = await self.db_session.execute(
@@ -167,5 +207,9 @@ class RoleService:
         for row in result.scalars().all():
             all_permissions.update(row)
 
-        logger.debug("Получены разрешения пользователя", user_id=user_id, permissions=list(all_permissions))
+        logger.debug(
+            "Получены разрешения пользователя",
+            user_id=user_id,
+            permissions=list(all_permissions),
+        )
         return list(all_permissions)

@@ -1,12 +1,13 @@
-from passlib.context import CryptContext
-from jose import jwt
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Union, Any
+from typing import Any, Dict, Optional, Union
 from uuid import UUID, uuid4
+
+import structlog
+from jose import jwt
+from passlib.context import CryptContext
 
 from auth_service.app.settings import settings
 from auth_service.app.utils.cache import redis_client
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -26,10 +27,10 @@ def generate_jti() -> str:
 
 
 def create_access_token(
-        subject: UUID,
-        payload: Optional[Dict[str, Any]] = None,
-        expires_minutes: Optional[int] = None,
-        mfa_verified: bool = False,
+    subject: UUID,
+    payload: Optional[Dict[str, Any]] = None,
+    expires_minutes: Optional[int] = None,
+    mfa_verified: bool = False,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -49,9 +50,9 @@ def create_access_token(
 
 
 def create_refresh_token(
-        subject: UUID,
-        payload: Optional[Dict[str, Any]] = None,
-        expires_days: Optional[int] = None,
+    subject: UUID,
+    payload: Optional[Dict[str, Any]] = None,
+    expires_days: Optional[int] = None,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -79,7 +80,7 @@ async def add_to_blacklist(jti: str, ttl_seconds: int):
 
 
 async def decode_jwt(
-        token: str, refresh: bool = False, options: Optional[Dict] = None
+    token: str, refresh: bool = False, options: Optional[Dict] = None
 ) -> Dict:
     secret = (
         settings.JWT_REFRESH_SECRET_KEY.get_secret_value()

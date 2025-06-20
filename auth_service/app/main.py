@@ -6,9 +6,9 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_ipaddr
 
 from auth_service.app.api.v1.routes import auth, roles
+from auth_service.app.core.logging import setup_logging
 from auth_service.app.settings import settings
 from auth_service.app.utils.cache import redis_client, test_connection
-from auth_service.app.core.logging import setup_logging
 
 logger = structlog.get_logger(__name__)
 
