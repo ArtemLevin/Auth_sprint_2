@@ -84,7 +84,7 @@ docker-compose.override.yml
 
 # Local development config
 .env
-.env.*
+
 
 # Mypy
 .mypy_cache/
