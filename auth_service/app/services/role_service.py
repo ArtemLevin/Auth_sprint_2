@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 import structlog
@@ -10,6 +10,7 @@ from auth_service.app.models.role import Role
 from auth_service.app.models.user import User
 from auth_service.app.models.user_role import UserRole
 from auth_service.app.schemas.role import RoleCreate, RoleUpdate
+from auth_service.app.utils.cache import redis_client
 
 logger = structlog.get_logger(__name__)
 
@@ -42,7 +43,7 @@ class RoleService:
         logger.debug("Получен список всех ролей", count=len(roles))
         return list(roles)
 
-    async def get_role_by_id(self, role_id: UUID) -> Optional[Role]:
+    async def get_role_by_id(self, role_id: UUID) -> Role | None:
         role = await self.db_session.get(Role, role_id)
         if role:
             logger.debug("Роль найдена по ID", role_id=role_id)
@@ -52,7 +53,7 @@ class RoleService:
 
     async def update_role(
         self, role_id: UUID, role_update: RoleUpdate
-    ) -> Optional[Role]:
+    ) -> Role | None:
         role = await self.db_session.get(Role, role_id)
         if not role:
             logger.warning("Роль не найдена для обновления", role_id=role_id)
@@ -120,6 +121,7 @@ class RoleService:
         user_role = UserRole(user_id=user_id, role_id=role_id)
         self.db_session.add(user_role)
         await self.db_session.commit()
+        await redis_client.delete(f"permissions:{user_id}")
         logger.info(
             "Роль успешно назначена пользователю", user_id=user_id, role_id=role_id
         )
@@ -133,6 +135,7 @@ class RoleService:
         )
         await self.db_session.commit()
         if result.rowcount > 0:
+            await redis_client.delete(f"permissions:{user_id}")
             logger.info(
                 "Роль успешно отозвана у пользователя", user_id=user_id, role_id=role_id
             )
