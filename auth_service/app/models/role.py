@@ -18,7 +18,7 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     permissions: Mapped[List[str]] = mapped_column(
-        ARRAY(String(255)), nullable=False, default_factory=list
+        ARRAY(String(255)), nullable=False, default=list
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
