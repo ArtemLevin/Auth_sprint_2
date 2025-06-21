@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_ipaddr
 
 from auth_service.app.api.v1.routes import auth, roles
+from auth_service.app.models.base import create_database
 from auth_service.app.settings import settings
 from auth_service.app.utils.cache import redis_client, test_connection
 from auth_service.app.core.logging_config import setup_logging
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Приложение запускается...")
     await test_connection()
+    await create_database()
     yield
     logger.info("Приложение завершает работу...")
     await redis_client.close()
