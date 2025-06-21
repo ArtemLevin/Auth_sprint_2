@@ -1,5 +1,5 @@
 import os
-from typing import List, Literal, Optional
+from typing import List, Literal
 
 from dotenv import load_dotenv
 from pydantic import Field, SecretStr, field_validator
