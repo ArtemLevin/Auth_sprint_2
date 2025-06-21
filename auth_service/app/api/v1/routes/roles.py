@@ -1,8 +1,7 @@
-from uuid import UUID
-
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from auth_service.app.core.dependencies import (get_current_user,
                                                 require_permission)
@@ -35,12 +34,12 @@ async def create_role(
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=str(e)
-        )  # Conflict if role exists
+        )
 
 
 @router.get("/", response_model=list[RoleResponse])
 async def get_all_roles(
-    role_service: RoleService = Depends(get_role_service),  # Внедряем RoleService
+    role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(get_current_user),
 ):
     roles = await role_service.get_all_roles()
@@ -54,7 +53,7 @@ async def get_role_by_id(
     role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(get_current_user),
 ):
-    role = await role_service.get_role_by_id(str(role_id))
+    role = await role_service.get_role_by_id(role_id)
     if not role:
         logger.warning("Роль не найдена", role_id=role_id)
         raise HTTPException(
@@ -66,12 +65,12 @@ async def get_role_by_id(
 
 @router.put("/{role_id}", response_model=RoleResponse)
 async def update_role(
-    role_id: UUID,  # Типизируем как UUID
+    role_id: UUID,
     role_update: RoleUpdate,
     role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(require_permission("manage_roles")),
 ):
-    role = await role_service.update_role(str(role_id), role_update)  # Передаем как str
+    role = await role_service.update_role(role_id, role_update)
     if not role:
         logger.warning("Роль не найдена для обновления", role_id=role_id)
         raise HTTPException(
@@ -87,7 +86,7 @@ async def delete_role(
     role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(require_permission("manage_roles")),
 ):
-    deleted = await role_service.delete_role(str(role_id))  # Передаем как str
+    deleted = await role_service.delete_role(role_id)
     if not deleted:
         logger.warning("Роль не найдена для удаления", role_id=role_id)
         raise HTTPException(
@@ -104,7 +103,7 @@ async def assign_role_to_user(
     role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(require_permission("manage_roles")),
 ):
-    assigned = await role_service.assign_role_to_user(str(user_id), str(role_id))
+    assigned = await role_service.assign_role_to_user(user_id, role_id)
     if not assigned:
         logger.warning(
             "Не удалось назначить роль пользователю", user_id=user_id, role_id=role_id
@@ -124,7 +123,7 @@ async def revoke_role_from_user(
     role_service: RoleService = Depends(get_role_service),
     user: dict = Depends(require_permission("manage_roles")),
 ):
-    revoked = await role_service.revoke_role_from_user(str(user_id), str(role_id))
+    revoked = await role_service.revoke_role_from_user(user_id, role_id)
     if not revoked:
         logger.warning(
             "Не удалось отозвать роль у пользователя", user_id=user_id, role_id=role_id
