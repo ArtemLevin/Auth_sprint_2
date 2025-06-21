@@ -1,13 +1,14 @@
+import datetime
 from uuid import UUID
 
 import structlog
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from auth_service.app.core.security import (create_access_token,
                                             create_refresh_token,
-                                            get_password_hash, verify_password)
+                                            get_password_hash, verify_password,
+                                            add_to_blacklist, decode_jwt)
 from auth_service.app.models import User
 
 logger = structlog.get_logger(__name__)
@@ -129,9 +130,16 @@ class AuthService:
             []
         )  # Заглушка, пока не реализована модель LoginHistory и ее использование
 
-    async def logout(self, jti: str, token_ttl: int):
-        # await add_to_blacklist(jti, token_ttl)
-        logger.info("Пользователь вышел из системы", jti=jti)
+    async def logout(self, refresh_token: str) -> None:
+        token = await decode_jwt(refresh_token, refresh=True)
+
+        # Вычисляем ttl для редиса
+        token_expire_date = datetime.datetime.fromtimestamp(token["exp"])
+        now = datetime.datetime.now()
+        ttl = int((token_expire_date - now).total_seconds())
+
+        await add_to_blacklist(token["jti"], ttl)
+        logger.info("Пользователь вышел из системы", jti=token["jti"])
 
     async def logout_all_other_sessions(
         self, user_id: UUID, current_jti: str, access_token_ttl: int
