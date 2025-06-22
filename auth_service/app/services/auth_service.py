@@ -4,6 +4,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm.session import Session
 
 
 from app.core.security import (create_access_token,
@@ -19,6 +20,18 @@ logger = structlog.get_logger(__name__)
 class AuthService:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
+
+    @staticmethod
+    def create_user(db: Session, username: str, password_hash: str, is_superuser: bool = False):
+        user = User(
+            login=username,
+            password_hash=password_hash,
+            is_superuser=is_superuser,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
 
     async def login(self, login: str, password: str) -> dict | None:
         result = await self.db_session.execute(select(User).where(User.login == login))
