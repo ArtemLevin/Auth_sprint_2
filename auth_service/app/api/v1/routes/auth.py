@@ -8,6 +8,7 @@ from app.schemas import LoginRequest, TokenPair, RegisterRequest
 from app.services.auth_service import AuthService
 from app.schemas.error import ErrorResponseModel
 
+
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -60,3 +61,15 @@ async def register(
 
     logger.info("Пользователь успешно зарегистрировался", login=request_data.login)
     return Response(status_code=status.HTTP_201_CREATED)
+
+
+@router.post(
+    "/logout",
+         response_model=MessageResponse,
+         responses={200: {"model": MessageResponse, "description": "Logged out"}}
+)
+async def logout(
+    request_data: RefreshToken, auth_service: AuthService = Depends(get_auth_service)
+) -> dict:
+    await auth_service.logout(request_data.refresh_token)
+    return Response(content={"message": "Logged out"},status_code=status.HTTP_200_OK)
