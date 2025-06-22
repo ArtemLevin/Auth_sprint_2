@@ -5,10 +5,10 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from auth_service.app.core.security import (create_access_token,
+from app.core.security import (create_access_token,
                                             create_refresh_token,
                                             get_password_hash, verify_password)
-from auth_service.app.models import User
+from app.models import User
 
 logger = structlog.get_logger(__name__)
 

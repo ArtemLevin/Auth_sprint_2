@@ -3,13 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
-from auth_service.app.core.dependencies import (get_current_user,
-                                                require_permission)
-from auth_service.app.db.session import get_db_session
-from auth_service.app.schemas.role import RoleCreate, RoleResponse, RoleUpdate
-from auth_service.app.services.role_service import RoleService
-from auth_service.app.models.user import User
-from auth_service.app.schemas.permission import UserPermissionsResponse
+from app.core.dependencies import get_current_user, require_permission
+from app.db.session import get_db_session
+from app.schemas.role import RoleCreate, RoleResponse, RoleUpdate
+from app.services.role_service import RoleService
+from app.models.user import User
+from app.schemas.permission import UserPermissionsResponse
 
 logger = structlog.get_logger(__name__)
 
@@ -34,9 +33,7 @@ async def create_role(
         logger.error(
             "Ошибка при создании роли", detail=str(e), role_name=role_data.name
         )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
 @router.get("/", response_model=list[RoleResponse])
@@ -140,7 +137,6 @@ async def revoke_role_from_user(
     return {"message": "Role revoked successfully"}
 
 
-
 @router.get("/{user_id}/permissions", response_model=UserPermissionsResponse)
 async def get_user_permissions_endpoint(
     user_id: UUID,
@@ -150,11 +146,15 @@ async def get_user_permissions_endpoint(
 ):
     user_obj = await db.get(User, user_id)
     if not user_obj:
-        logger.warning("Пользователь не найден для получения разрешений", user_id=user_id)
+        logger.warning(
+            "Пользователь не найден для получения разрешений", user_id=user_id
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     permissions = await role_service.get_user_permissions(user_id)
-    logger.info("Получены разрешения для пользователя", user_id=user_id, permissions=permissions)
+    logger.info(
+        "Получены разрешения для пользователя", user_id=user_id, permissions=permissions
+    )
     return UserPermissionsResponse(user_id=user_id, permissions=permissions)

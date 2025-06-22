@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
-from auth_service.app.settings import settings
+from app.settings import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,

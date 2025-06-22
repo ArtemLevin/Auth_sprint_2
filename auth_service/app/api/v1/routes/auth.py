@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
-from auth_service.app.db.session import get_db_session
-from auth_service.app.schemas import LoginRequest, TokenPair, RegisterRequest
-from auth_service.app.services.auth_service import AuthService
-from schemas.error import SuccessResponse, ErrorResponseModel
+from app.db.session import get_db_session
+from app.schemas import LoginRequest, TokenPair, RegisterRequest
+from app.services.auth_service import AuthService
+from app.schemas.error import SuccessResponse, ErrorResponseModel
 
 logger = structlog.get_logger(__name__)
 

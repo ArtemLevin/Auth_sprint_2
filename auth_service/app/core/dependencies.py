@@ -8,11 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from jose.exceptions import ExpiredSignatureError, JWTError
 
-from auth_service.app.core.security import decode_jwt, is_token_blacklisted
-from auth_service.app.db.session import get_db_session
-from auth_service.app.models import Role, User, UserRole
-from auth_service.app.schemas.error import ErrorResponseModel
-from auth_service.app.utils.cache import redis_client
+from app.core.security import decode_jwt, is_token_blacklisted
+from app.db.session import get_db_session
+from app.models import Role, User, UserRole
+from app.schemas.error import ErrorResponseModel
+from app.utils.cache import redis_client
 
 logger = structlog.get_logger(__name__)
 
