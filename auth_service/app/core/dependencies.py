@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from jose.exceptions import ExpiredSignatureError, JWTError
 
-from app.core.security import decode_jwt, is_token_blacklisted
+from app.core.security import decode_jwt
 from app.db.session import get_db_session
 from app.models import Role, User, UserRole
 from app.schemas.error import ErrorResponseModel
@@ -137,9 +137,11 @@ async def get_current_user(
         logger.warning("Ошибка валидации токена", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ErrorResponseModel(detail={"token": "Token is blacklisted"}).model_dump(),
+            detail=ErrorResponseModel(
+                detail={"token": "Token is blacklisted"}
+            ).model_dump(),
         )
-    except Exception as e:
+    except Exception:
         logger.exception(
             "Произошла непредвиденная ошибка при получении текущего пользователя"
         )
@@ -151,7 +153,7 @@ async def get_current_user(
 
 def require_permission(permission: str):
     async def _require_permission(
-        current_user: Dict[str, Any] = Depends(get_current_user)
+        current_user: Dict[str, Any] = Depends(get_current_user),
     ):
         if current_user["is_superuser"] or "*" in current_user["permissions"]:
             logger.debug(

@@ -1,13 +1,15 @@
 from uuid import UUID
 
 import structlog
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.core.security import (create_access_token,
-                                            create_refresh_token,
-                                            get_password_hash, verify_password)
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    verify_password,
+)
 from app.models import User
 
 logger = structlog.get_logger(__name__)
@@ -61,7 +63,7 @@ class AuthService:
                 success = False
                 logger.warning(
                     "Попытка регистрации с уже существующим адресом электронной почты",
-                    email=email
+                    email=email,
                 )
                 errors["email"] = f"User with email '{email}' already exists."
 
@@ -125,9 +127,7 @@ class AuthService:
         # )
         # return result.scalars().all()
         logger.info("Запрошена история входов пользователя", user_id=user_id)
-        return (
-            []
-        )  # Заглушка, пока не реализована модель LoginHistory и ее использование
+        return []  # Заглушка, пока не реализована модель LoginHistory и ее использование
 
     async def logout(self, jti: str, token_ttl: int):
         # await add_to_blacklist(jti, token_ttl)

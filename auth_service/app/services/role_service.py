@@ -51,9 +51,7 @@ class RoleService:
             logger.debug("Роль не найдена по ID", role_id=role_id)
         return role
 
-    async def update_role(
-        self, role_id: UUID, role_update: RoleUpdate
-    ) -> Role | None:
+    async def update_role(self, role_id: UUID, role_update: RoleUpdate) -> Role | None:
         role = await self.db_session.get(Role, role_id)
         if not role:
             logger.warning("Роль не найдена для обновления", role_id=role_id)

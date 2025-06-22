@@ -16,7 +16,9 @@ logger = structlog.get_logger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password: str, hashed_password: Union[str, Mapped[str]]) -> bool:
+def verify_password(
+    plain_password: str, hashed_password: Union[str, Mapped[str]]
+) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -29,10 +31,10 @@ def generate_jti() -> str:
 
 
 def create_access_token(
-        subject: UUID,
-        payload: Dict[str, Any] | None = None,
-        expires_minutes: int | None = None,
-        mfa_verified: bool = False,
+    subject: UUID,
+    payload: Dict[str, Any] | None = None,
+    expires_minutes: int | None = None,
+    mfa_verified: bool = False,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -52,9 +54,9 @@ def create_access_token(
 
 
 def create_refresh_token(
-        subject: Union[UUID, Mapped[UUID]],
-        payload: Dict[str, Any] | None = None,
-        expires_days: int | None = None,
+    subject: Union[UUID, Mapped[UUID]],
+    payload: Dict[str, Any] | None = None,
+    expires_days: int | None = None,
 ) -> str:
     to_encode = payload.copy() if payload else {}
     expire = datetime.now(timezone.utc) + timedelta(
@@ -82,7 +84,7 @@ async def add_to_blacklist(jti: str, ttl_seconds: int):
 
 
 async def decode_jwt(
-        token: str, refresh: bool = False, options: Dict | None = None
+    token: str, refresh: bool = False, options: Dict | None = None
 ) -> Dict:
     secret = (
         settings.JWT_REFRESH_SECRET_KEY.get_secret_value()
