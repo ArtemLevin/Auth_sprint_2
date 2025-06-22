@@ -2,6 +2,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
+from uuid import UUID
 
 from app.db.session import get_db_session
 from app.schemas import LoginRequest, TokenPair, RegisterRequest, LoginHistoryResponse
@@ -90,12 +91,66 @@ async def register(
     "/logout",
     response_model=MessageResponse,
     responses={200: {"model": MessageResponse, "description": "Logged out"}},
+    summary="Log out from current session",
+    description="Invalidates the provided refresh token, effectively logging out the user from this session.",
 )
 async def logout(
     request_data: RefreshToken, auth_service: AuthService = Depends(get_auth_service)
 ) -> MessageResponse:
     await auth_service.logout(request_data.refresh_token)
     return MessageResponse(message="Logged out")
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenPair,
+    responses={
+        status.HTTP_200_OK: {"model": TokenPair},
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Invalid or expired refresh token",
+            "model": ErrorResponseModel,
+        },
+    },
+    summary="Refresh access token",
+    description="Exchanges a valid refresh token for a new access token and refresh token.",
+)
+async def refresh_token(
+    request_data: RefreshToken,
+    auth_service: AuthService = Depends(get_auth_service)
+) -> TokenPair:
+    try:
+        new_tokens = await auth_service.refresh_tokens(request_data.refresh_token)
+        if not new_tokens:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ErrorResponseModel(
+                    detail={"token": "Invalid or expired refresh token"}
+                ).model_dump(),
+            )
+        return new_tokens
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=ErrorResponseModel(
+                detail={"token": str(e)}
+            ).model_dump(),
+        )
+
+@router.post(
+    "/logout_all_other_sessions",
+    response_model=MessageResponse,
+    responses={200: {"model": MessageResponse, "description": "Logged out from all other sessions"}},
+    summary="Log out from all other active sessions",
+    description="Invalidates all active sessions for the current user, except the one used for this request.",
+)
+async def logout_all_other_sessions_endpoint(
+    request_data: RefreshToken,
+    current_user: dict = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> MessageResponse:
+    user_id = UUID(current_user["id"])
+    await auth_service.logout_all_other_sessions(user_id, request_data.refresh_token)
+    return MessageResponse(message="Logged out from all other sessions successfully")
 
 
 @router.get(

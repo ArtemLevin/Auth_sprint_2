@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = Field(..., description="PostgreSQL async URL")
     TEST_DATABASE_URL: str = Field(..., description="PostgreSQL async URL for tests")
+    SYNC_DATABASE_URL: str = ""
+
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10
     DATABASE_ECHO: bool = False
@@ -46,11 +48,12 @@ class Settings(BaseSettings):
     MFA_TOTP_ISSUER: str = "OnlineCinema Auth"
 
     @field_validator("DATABASE_URL", mode="after")
-    def check_database_url(cls, v):
+    def check_database_url(cls, v, info):
         if not v.startswith(("postgresql+asyncpg://", "sqlite+aiosqlite://")):
             raise ValueError(
                 "DATABASE_URL должен начинаться с postgresql+asyncpg:// или sqlite+aiosqlite://"
             )
+        info.data["SYNC_DATABASE_URL"] = v.replace("+asyncpg", "")
         return v
 
     @field_validator("JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY", mode="after")

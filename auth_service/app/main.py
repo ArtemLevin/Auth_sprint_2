@@ -1,9 +1,8 @@
 import structlog
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, cast
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse  # Для кастомного обработчика исключений
+from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_ipaddr
@@ -15,15 +14,6 @@ from app.core.logging_config import setup_logging
 from app.schemas.error import ErrorResponseModel
 
 logger = structlog.get_logger(__name__)
-
-# Определяем временный тип для app.state, чтобы добавить атрибут limiter
-if TYPE_CHECKING:
-    from starlette.datastructures import State as StarletteState
-
-    class AppStateWithLimiter(StarletteState):
-        limiter: Limiter
-else:
-    AppStateWithLimiter = object  # Заглушка для runtime, если TYPE_CHECKING не True
 
 limiter = Limiter(
     key_func=get_ipaddr,
@@ -52,12 +42,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Явно приводим тип app.state
-app.state = cast(AppStateWithLimiter, app.state)
 app.state.limiter = limiter
 
-
-# Обработчик исключений для RateLimitExceeded
 async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
     logger.warning(
         "Превышен лимит запросов", ip_address=request.client.host, detail=exc.detail
@@ -69,7 +55,6 @@ async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded)
     )
 
 
-# Используем собственный обработчик
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.add_middleware(
