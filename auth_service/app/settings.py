@@ -1,5 +1,5 @@
 import os
-from typing import List, Literal, Optional
+from typing import List, Literal
 
 from dotenv import load_dotenv
 from pydantic import Field, SecretStr, field_validator
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     DATABASE_URL: str = Field(..., description="PostgreSQL async URL")
+    TEST_DATABASE_URL: str = Field(..., description="PostgreSQL async URL for tests")
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10
     DATABASE_ECHO: bool = False
@@ -35,7 +36,6 @@ class Settings(BaseSettings):
     )
 
     LOG_LEVEL: str = "INFO"
-    LOG_FILE: str | None = None
     LOG_JSON_FORMAT: bool = False
     LOG_ROTATION: str = "10 MB"
     LOG_RETENTION: str = "7 days"

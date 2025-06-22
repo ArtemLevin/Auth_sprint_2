@@ -4,9 +4,9 @@ import structlog
 import typer
 from sqlalchemy.future import select
 
-from auth_service.app.core.security import get_password_hash
-from auth_service.app.db.session import AsyncDBSession
-from auth_service.app.models import User
+from app.core.security import get_password_hash
+from app.db.session import AsyncDBSession
+from app.models import User
 
 logger = structlog.get_logger(__name__)
 

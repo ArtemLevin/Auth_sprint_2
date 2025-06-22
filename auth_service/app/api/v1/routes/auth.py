@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
-from auth_service.app.db.session import get_db_session
-from auth_service.app.schemas import LoginRequest, TokenPair, RegisterRequest
-from auth_service.app.services.auth_service import AuthService
-from schemas.auth import RefreshToken, MessageResponse
-from schemas.error import SuccessResponse, ErrorResponseModel
+from app.db.session import get_db_session
+from app.schemas import LoginRequest, TokenPair, RegisterRequest
+from app.services.auth_service import AuthService
+from app.schemas.error import ErrorResponseModel
+
 
 logger = structlog.get_logger(__name__)
 
@@ -47,13 +47,10 @@ async def login(
     description="Registers a new user with provided login and password. Email is optional.",
 )
 async def register(
-    request_data: RegisterRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    request_data: RegisterRequest, auth_service: AuthService = Depends(get_auth_service)
 ) -> Response:
     success, error_messages = await auth_service.register(
-        request_data.login,
-        request_data.password,
-        request_data.email
+        request_data.login, request_data.password, request_data.email
     )
 
     if not success:

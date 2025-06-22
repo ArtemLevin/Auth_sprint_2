@@ -1,7 +1,7 @@
-from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncAttrs
 
-from auth_service.app.db.session import engine
+from app.db.session import engine
 
 
 class Base(AsyncAttrs, DeclarativeBase):
