@@ -22,7 +22,9 @@ class AuthService:
         self.db_session = db_session
 
     @staticmethod
-    def create_user(db: Session, username: str, password_hash: str, is_superuser: bool = False):
+    def create_user(
+        db: Session, username: str, password_hash: str, is_superuser: bool = False
+    ):
         user = User(
             login=username,
             password_hash=password_hash,
