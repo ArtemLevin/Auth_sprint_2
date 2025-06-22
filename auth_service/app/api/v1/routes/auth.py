@@ -1,13 +1,14 @@
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
 from app.db.session import get_db_session
-from app.schemas import LoginRequest, TokenPair, RegisterRequest
+from app.schemas import LoginRequest, TokenPair, RegisterRequest, LoginHistoryResponse
 from app.services.auth_service import AuthService
 from app.schemas.error import ErrorResponseModel
-
+from app.schemas.auth import MessageResponse, RefreshToken
+from app.core.dependencies import get_current_user
 
 logger = structlog.get_logger(__name__)
 
@@ -18,16 +19,38 @@ async def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthSe
     return AuthService(db)
 
 
-@router.post("/login", response_model=TokenPair)
+@router.post(
+    "/login",
+    response_model=TokenPair,
+    responses={
+        status.HTTP_200_OK: {"model": TokenPair},
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Incorrect login or password",
+            "model": ErrorResponseModel,
+        },
+    },
+)
 async def login(
-    request_data: LoginRequest, auth_service: AuthService = Depends(get_auth_service)
+    request_data: LoginRequest,
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    tokens = await auth_service.login(request_data.login, request_data.password)
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("User-Agent")
+
+    tokens = await auth_service.login(
+        request_data.login,
+        request_data.password,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
     if not tokens:
         logger.warning("Неудачная попытка входа", login=request_data.login)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect login or password",
+            detail=ErrorResponseModel(
+                detail={"authentication": "Incorrect login or password"}
+            ).model_dump(),
         )
 
     logger.info("Пользователь успешно вошел в систему", login=request_data.login)
@@ -65,11 +88,30 @@ async def register(
 
 @router.post(
     "/logout",
-         response_model=MessageResponse,
-         responses={200: {"model": MessageResponse, "description": "Logged out"}}
+    response_model=MessageResponse,
+    responses={200: {"model": MessageResponse, "description": "Logged out"}},
 )
 async def logout(
     request_data: RefreshToken, auth_service: AuthService = Depends(get_auth_service)
-) -> dict:
+) -> MessageResponse:
     await auth_service.logout(request_data.refresh_token)
-    return Response(content={"message": "Logged out"},status_code=status.HTTP_200_OK)
+    return MessageResponse(message="Logged out")
+
+
+@router.get(
+    "/history",
+    response_model=list[LoginHistoryResponse],
+    summary="Get user login history",
+    description="Retrieves the login history for the current authenticated user.",
+    responses={
+        status.HTTP_200_OK: {"description": "Login history retrieved successfully"},
+        status.HTTP_401_UNAUTHORIZED: {"description": "Unauthorized"},
+    },
+)
+async def get_user_login_history(
+    current_user: dict = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> list[LoginHistoryResponse]:
+    user_id = current_user["id"]
+    history = await auth_service.get_login_history(user_id)
+    return [LoginHistoryResponse.model_validate(entry) for entry in history]

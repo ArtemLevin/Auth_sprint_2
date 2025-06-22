@@ -4,14 +4,13 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm.session import Session
-
+from sqlalchemy import desc
 
 from app.core.security import (create_access_token,
                                             create_refresh_token,
                                             get_password_hash, verify_password,
                                             add_to_blacklist, decode_jwt)
-from app.models import User
+from app.models import User, LoginHistory
 
 
 logger = structlog.get_logger(__name__)
@@ -21,21 +20,7 @@ class AuthService:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
-    @staticmethod
-    def create_user(
-        db: Session, username: str, password_hash: str, is_superuser: bool = False
-    ):
-        user = User(
-            login=username,
-            password_hash=password_hash,
-            is_superuser=is_superuser,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return user
-
-    async def login(self, login: str, password: str) -> dict | None:
+    async def login(self, login: str, password: str, ip_address: str | None = None, user_agent: str | None = None) -> dict | None:
         result = await self.db_session.execute(select(User).where(User.login == login))
         user = result.scalars().first()
         if not user or not verify_password(password, user.password_hash):
@@ -48,6 +33,15 @@ class AuthService:
             subject=user.id, payload={"login": user.login}
         )
         refresh_token = create_refresh_token(subject=user.id)
+
+        login_history_entry = LoginHistory(
+            user_id=user.id,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        self.db_session.add(login_history_entry)
+        await self.db_session.commit()
+        await self.db_session.refresh(login_history_entry)
 
         logger.info(
             "Пользователь успешно вошел в систему", user_id=user.id, login=user.login
@@ -134,16 +128,15 @@ class AuthService:
         logger.info("Профиль пользователя успешно обновлен", user_id=user_id)
         return user
 
-    async def get_login_history(self, user_id: UUID) -> list:
-        # Здесь должна быть логика получения истории входов,
-        # предполагается, что модель LoginHistory уже существует и связана с User.
-        # Пример:
-        # result = await self.db_session.execute(
-        #     select(LoginHistory).where(LoginHistory.user_id == user_id).order_by(LoginHistory.login_at.desc())
-        # )
-        # return result.scalars().all()
-        logger.info("Запрошена история входов пользователя", user_id=user_id)
-        return []  # Заглушка, пока не реализована модель LoginHistory и ее использование
+    async def get_login_history(self, user_id: UUID) -> list[LoginHistory]:
+        result = await self.db_session.execute(
+            select(LoginHistory)
+            .where(LoginHistory.user_id == user_id)
+            .order_by(desc(LoginHistory.login_at))
+        )
+        history = result.scalars().all()
+        logger.info("Запрошена история входов пользователя", user_id=user_id, count=len(history))
+        return list(history)
 
     async def logout(self, refresh_token: str) -> None:
         token = await decode_jwt(refresh_token, refresh=True)

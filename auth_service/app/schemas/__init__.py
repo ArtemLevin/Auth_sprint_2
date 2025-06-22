@@ -1,4 +1,4 @@
-from .auth import LoginRequest, RegisterRequest, TokenData, TokenPair
+from .auth import LoginRequest, RegisterRequest, TokenData, TokenPair, MessageResponse, RefreshToken
 from .mfa import MFASetupResponse, MFAVerifyRequest, MFAVerifyResponse
 from .permission import (
     PermissionCheckRequest,
@@ -7,6 +7,7 @@ from .permission import (
 )
 from .role import RoleBase, RoleCreate, RoleResponse, RoleUpdate
 from .user import UpdateProfileRequest, UserBase, UserCreate, UserResponse
+from .login_history import LoginHistoryResponse
 
 __all__ = [
     "TokenPair",
@@ -26,4 +27,7 @@ __all__ = [
     "PermissionCheckRequest",
     "PermissionCheckResponse",
     "UserPermissionsResponse",
+    "MessageResponse",
+    "RefreshToken",
+    "LoginHistoryResponse",
 ]
