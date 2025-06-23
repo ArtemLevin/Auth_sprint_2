@@ -17,8 +17,8 @@ logger = structlog.get_logger(__name__)
 
 limiter = Limiter(
     key_func=get_ipaddr,
-    default_limits=[settings.RATE_LIMIT_DEFAULT],
-    storage_uri=settings.REDIS_URL.get_secret_value(),
+    default_limits=[settings.rate_limit_default],
+    storage_uri=settings.redis_url.get_secret_value(),
 )
 
 
@@ -33,12 +33,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    debug=settings.DEBUG,
+    title=settings.app_name,
+    debug=settings.debug,
     version="0.1.0",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.api_v1_str}/docs",
+    redoc_url=f"{settings.api_v1_str}/redoc",
+    openapi_url=f"{settings.api_v1_str}/openapi.json",
     lifespan=lifespan,
 )
 
@@ -59,7 +59,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,5 +71,5 @@ async def health_check():
     return {"status": "ok"}
 
 
-app.include_router(auth.router, prefix=settings.API_V1_STR)
-app.include_router(roles.router, prefix=settings.API_V1_STR)
+app.include_router(auth.router, prefix=settings.api_v1_str)
+app.include_router(roles.router, prefix=settings.api_v1_str)

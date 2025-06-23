@@ -4,11 +4,11 @@ from typing import AsyncGenerator
 from app.settings import settings
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     pool_pre_ping=True,
-    echo=settings.DATABASE_ECHO,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    echo=settings.database_echo,
+    pool_size=settings.database_pool_size,
+    max_overflow=settings.database_max_overflow,
 )
 
 AsyncDBSession = sessionmaker(
@@ -22,4 +22,10 @@ AsyncDBSession = sessionmaker(
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncDBSession() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

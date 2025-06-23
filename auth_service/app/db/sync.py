@@ -3,8 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from app.settings import settings
 
 SyncEngine = create_engine(
-    settings.SYNC_DATABASE_URL,
-    echo=settings.DATABASE_ECHO,
+    settings.sync_database_url,
+    echo=settings.database_echo,
     pool_pre_ping=True,
 )
 

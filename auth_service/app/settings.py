@@ -10,53 +10,53 @@ load_dotenv(DOTENV_PATH)
 
 
 class Settings(BaseSettings):
-    ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
+    environment: Literal["development", "test", "staging", "production"] = "development"
 
-    APP_NAME: str = "Auth Service"
-    DEBUG: bool = False
-    API_V1_STR: str = "/api/v1"
+    app_name: str = "Auth Service"
+    debug: bool = False
+    api_v1_str: str = "/api/v1"
 
-    DATABASE_URL: str = Field(..., description="PostgreSQL async URL")
-    TEST_DATABASE_URL: str = Field(..., description="PostgreSQL async URL for tests")
-    SYNC_DATABASE_URL: str = ""
+    database_url: str = Field(..., description="PostgreSQL async URL")
+    test_database_url: str = Field(..., description="PostgreSQL async URL for tests")
+    sync_database_url: str = ""
 
-    DATABASE_POOL_SIZE: int = 5
-    DATABASE_MAX_OVERFLOW: int = 10
-    DATABASE_ECHO: bool = False
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+    database_echo: bool = False
 
-    JWT_SECRET_KEY: SecretStr = Field(..., description="Secret key for access tokens")
-    JWT_REFRESH_SECRET_KEY: SecretStr = Field(
+    jwt_secret_key: SecretStr = Field(..., description="Secret key for access tokens")
+    jwt_refresh_secret_key: SecretStr = Field(
         ..., description="Secret key for refresh tokens"
     )
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
 
-    REDIS_URL: SecretStr = Field(
+    redis_url: SecretStr = Field(
         default=SecretStr("redis://localhost:6379"),
         description="URL подключения к Redis",
     )
 
-    LOG_LEVEL: str = "INFO"
-    LOG_JSON_FORMAT: bool = False
+    log_level: str = "INFO"
+    log_json_format: bool = False
 
-    ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] = ["*"]
-    RATE_LIMIT_DEFAULT: str = "5/minute"
-    RATE_LIMIT_STORAGE: str = "redis"
+    allowed_hosts: List[str] = ["*"]
+    cors_origins: List[str] = ["*"]
+    rate_limit_default: str = "5/minute"
+    rate_limit_storage: str = "redis"
 
-    MFA_TOTP_ISSUER: str = "OnlineCinema Auth"
+    mfa_totp_issuer: str = "OnlineCinema Auth"
 
-    @field_validator("DATABASE_URL", mode="after")
+    @field_validator("database_url", mode="after")
     def check_database_url(cls, v, info):
         if not v.startswith(("postgresql+asyncpg://", "sqlite+aiosqlite://")):
             raise ValueError(
-                "DATABASE_URL должен начинаться с postgresql+asyncpg:// или sqlite+aiosqlite://"
+                "database_url должен начинаться с postgresql+asyncpg:// или sqlite+aiosqlite://"
             )
-        info.data["SYNC_DATABASE_URL"] = v.replace("+asyncpg", "")
+        info.data["sync_database_url"] = v.replace("+asyncpg", "")
         return v
 
-    @field_validator("JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY", mode="after")
+    @field_validator("jwt_secret_key", "jwt_refresh_secret_key", mode="after")
     def check_jwt_secrets(cls, v: SecretStr, info):
         if len(v.get_secret_value()) < 16:
             raise ValueError(
@@ -64,15 +64,15 @@ class Settings(BaseSettings):
             )
         return v
 
-    @field_validator("REDIS_URL", mode="after")
+    @field_validator("redis_url", mode="after")
     def parse_redis_url(cls, v: SecretStr):
         url = v.get_secret_value()
         if not url.startswith("redis://"):
-            raise ValueError("REDIS_URL должен начинаться с redis://")
+            raise ValueError("redis_url должен начинаться с redis://")
         return v
 
 
 settings = Settings()
 
 if __name__ == "__main__":
-    print(settings.model_dump(exclude={"JWT_SECRET_KEY", "JWT_REFRESH_SECRET_KEY"}))
+    print(settings.model_dump(exclude={"jwt_secret_key", "jwt_refresh_secret_key"}))
