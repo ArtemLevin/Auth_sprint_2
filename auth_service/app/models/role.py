@@ -24,4 +24,4 @@ class Role(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    users: Mapped[List["UserRole"]] = relationship("UserRole", back_populates="role")
+    users: Mapped[List["UserRole"]] = relationship("UserRole", back_populates="role", cascade="all, delete-orphan")

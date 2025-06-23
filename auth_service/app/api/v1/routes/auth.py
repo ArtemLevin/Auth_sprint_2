@@ -1,5 +1,5 @@
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 from uuid import UUID
@@ -164,9 +164,11 @@ async def logout_all_other_sessions_endpoint(
     },
 )
 async def get_user_login_history(
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of history entries to return"),
+    offset: int = Query(0, ge=0, description="Number of history entries to skip"),
     current_user: dict = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> list[LoginHistoryResponse]:
     user_id = current_user["id"]
-    history = await auth_service.get_login_history(user_id)
+    history = await auth_service.get_login_history(user_id, limit=limit, offset=offset)
     return [LoginHistoryResponse.model_validate(entry) for entry in history]
