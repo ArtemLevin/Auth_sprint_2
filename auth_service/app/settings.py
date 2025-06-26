@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings
 
+from app.schemas.ratelimiting import RateLimitConfigDict, RoleBasedLimits, RateLimitConfig
+
 DOTENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 load_dotenv(DOTENV_PATH)
-
 
 class Settings(BaseSettings):
     environment: Literal["development", "test", "staging", "production"] = "development"
@@ -42,10 +43,30 @@ class Settings(BaseSettings):
 
     allowed_hosts: List[str] = ["*"]
     cors_origins: List[str] = ["*"]
-    rate_limit_default: str = "5/minute"
-    rate_limit_storage: str = "redis"
 
     mfa_totp_issuer: str = "OnlineCinema Auth"
+
+    RATE_LIMIT_CONFIG: RateLimitConfigDict = Field(
+        default_factory=lambda: RateLimitConfigDict(
+            default=RoleBasedLimits(
+                default=RateLimitConfig(capacity=10, leak_rate=1, ttl_seconds=60),
+                guest=RateLimitConfig(capacity=5, leak_rate=0.5, ttl_seconds=60),
+                user=RateLimitConfig(capacity=20, leak_rate=2, ttl_seconds=300),
+                premium=RateLimitConfig(capacity=100, leak_rate=10, ttl_seconds=3600),
+                superuser=RateLimitConfig(capacity=500, leak_rate=50, ttl_seconds=86400),
+            ),
+            login=RoleBasedLimits(
+                default=RateLimitConfig(capacity=5, leak_rate=0.5, ttl_seconds=300),
+                guest=RateLimitConfig(capacity=3, leak_rate=0.3, ttl_seconds=300),
+                user=RateLimitConfig(capacity=10, leak_rate=1, ttl_seconds=600),
+                premium=RateLimitConfig(capacity=20, leak_rate=2, ttl_seconds=1200),
+                superuser=RateLimitConfig(capacity=50, leak_rate=5, ttl_seconds=3600),
+            ),
+            register=RoleBasedLimits(
+                default=RateLimitConfig(capacity=3, leak_rate=0.3, ttl_seconds=300),
+            )
+        )
+    )
 
     @field_validator("database_url", mode="after")
     def check_database_url(cls, v, info):
@@ -70,7 +91,6 @@ class Settings(BaseSettings):
         if not url.startswith("redis://"):
             raise ValueError("redis_url должен начинаться с redis://")
         return v
-
 
 settings = Settings()
 
