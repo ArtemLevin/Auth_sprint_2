@@ -9,7 +9,7 @@ from app.schemas import LoginRequest, TokenPair, RegisterRequest, LoginHistoryRe
 from app.services.auth_service import AuthService
 from app.schemas.error import ErrorResponseModel
 from app.schemas.auth import MessageResponse, RefreshToken
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, rate_limit_dependency
 
 logger = structlog.get_logger(__name__)
 
@@ -29,7 +29,12 @@ async def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthSe
             "description": "Incorrect login or password",
             "model": ErrorResponseModel,
         },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests",
+            "model": ErrorResponseModel,
+        },
     },
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "login"})]
 )
 async def login(
     request_data: LoginRequest,
@@ -66,9 +71,14 @@ async def login(
             "description": "Conflict: Login or email already exists",
             "model": ErrorResponseModel,
         },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests",
+            "model": ErrorResponseModel,
+        },
     },
     summary="Register a new user",
     description="Registers a new user with provided login and password. Email is optional.",
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "register"})]
 )
 async def register(
     request_data: RegisterRequest, auth_service: AuthService = Depends(get_auth_service)
@@ -93,6 +103,7 @@ async def register(
     responses={200: {"model": MessageResponse, "description": "Logged out"}},
     summary="Log out from current session",
     description="Invalidates the provided refresh token, effectively logging out the user from this session.",
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "default"})]
 )
 async def logout(
     request_data: RefreshToken, auth_service: AuthService = Depends(get_auth_service)
@@ -110,9 +121,14 @@ async def logout(
             "description": "Invalid or expired refresh token",
             "model": ErrorResponseModel,
         },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests",
+            "model": ErrorResponseModel,
+        },
     },
     summary="Refresh access token",
     description="Exchanges a valid refresh token for a new access token and refresh token.",
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "default"})]
 )
 async def refresh_token(
     request_data: RefreshToken,
@@ -142,6 +158,7 @@ async def refresh_token(
     responses={200: {"model": MessageResponse, "description": "Logged out from all other sessions"}},
     summary="Log out from all other active sessions",
     description="Invalidates all active sessions for the current user, except the one used for this request.",
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "default"})]
 )
 async def logout_all_other_sessions_endpoint(
     request_data: RefreshToken,
@@ -161,7 +178,12 @@ async def logout_all_other_sessions_endpoint(
     responses={
         status.HTTP_200_OK: {"description": "Login history retrieved successfully"},
         status.HTTP_401_UNAUTHORIZED: {"description": "Unauthorized"},
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests",
+            "model": ErrorResponseModel,
+        },
     },
+    dependencies=[Depends(rate_limit_dependency, use_cache=False, kwargs={"traffic_type": "default"})]
 )
 async def get_user_login_history(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of history entries to return"),
