@@ -15,7 +15,7 @@ class RedisLeakyBucketRateLimiter:
     def __init__(self, redis_client: aioredis.Redis, settings: settings):
         self.redis = redis_client
         self.settings = settings
-        self.rate_limit_config: RateLimitConfigDict = settings.RATE_LIMIT_CONFIG
+        self.rate_limit_config: RateLimitConfigDict = settings.rate_limit_config
 
     async def _get_effective_config(self, user_roles: List[str], traffic_type: str) -> RateLimitConfig:
         config_for_traffic_type: RoleBasedLimits = getattr(self.rate_limit_config, traffic_type,
