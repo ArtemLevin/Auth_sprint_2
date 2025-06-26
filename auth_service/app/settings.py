@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     mfa_totp_issuer: str = "OnlineCinema Auth"
 
-    RATE_LIMIT_CONFIG: RateLimitConfigDict = Field(
+    rate_limit_config: RateLimitConfigDict = Field(
         default_factory=lambda: RateLimitConfigDict(
             default=RoleBasedLimits(
                 default=RateLimitConfig(capacity=10, leak_rate=1, ttl_seconds=60),
