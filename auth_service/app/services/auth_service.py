@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from app.core.security import (add_to_blacklist, create_access_token,
-                               create_refresh_token, decode_jwt,
+                               create_refresh_token, decode_jwt, generate_jti,
                                get_password_hash, is_token_blacklisted,
                                verify_password)
 from app.models import LoginHistory, User
@@ -98,6 +98,31 @@ class AuthService:
 
         return success, errors
 
+    async def login_or_register_via_yandex(self, yandex_id: str, email: str | None, login: str) -> dict:
+        result = await self.db_session.execute(
+            select(User).where(User.yandex_id == yandex_id)
+        )
+        user = result.scalars().first()
+        if not user:
+            if email:
+                exist = await self.db_session.execute(
+                    select(User).where(User.email == email)
+                )
+                user = exist.scalars().first()
+            if not user:
+                user = User(
+                    login=f"{login}_ya",
+                    email=email,
+                    yandex_id=yandex_id,
+                    password_hash=get_password_hash(generate_jti())
+                )
+                self.db_session.add(user)
+                await self.db_session.commit()
+                await self.db_session.refresh(user)
+        access_token = create_access_token(subject=user.id, payload={"login":user.login})
+        refresh_token = create_refresh_token(subject=user.id)
+        return {"access_token": access_token, "refresh_token": refresh_token}
+    
     async def update_profile(
         self,
         user_id: UUID,

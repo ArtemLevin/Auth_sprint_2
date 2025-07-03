@@ -15,6 +15,7 @@ class User(Base):
 
     id: Mapped[PyUUID] = mapped_column(primary_key=True, default=uuid4)
     login: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    yandex_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     email: Mapped[str | None] = mapped_column(String(100), unique=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)

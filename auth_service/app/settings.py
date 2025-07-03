@@ -4,7 +4,7 @@ from typing import List, Literal
 from app.schemas.ratelimiting import (RateLimitConfig, RateLimitConfigDict,
                                       RoleBasedLimits)
 from dotenv import load_dotenv
-from pydantic import Field, SecretStr, field_validator
+from pydantic import AnyUrl, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings
 
 DOTENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     database_pool_size: int = 5
     database_max_overflow: int = 10
     database_echo: bool = False
+
+    frontend_url: AnyUrl = Field(
+        ..., env="FRONTEND_URL", description="URL фронтенд-приложения"
+    )
+    yandex_client_id: str = Field(..., env="YANDEX_CLIENT_ID")
+    yandex_client_secret: SecretStr = Field(..., env="YANDEX_CLIENT_SECRET")
+    yandex_callback_url: str = Field(..., env="YANDEX_CALLBACK_URL")
 
     jwt_secret_key: SecretStr = Field(..., description="Secret key for access tokens")
     jwt_refresh_secret_key: SecretStr = Field(

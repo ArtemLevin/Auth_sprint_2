@@ -2,20 +2,47 @@ from uuid import UUID
 
 import structlog
 from app.core.dependencies import get_current_user, rate_limit_dependency
+from app.core.oauth import oauth
 from app.db.session import get_db_session
 from app.schemas import (LoginHistoryResponse, LoginRequest, RegisterRequest,
                          TokenPair)
 from app.schemas.auth import MessageResponse, RefreshToken
 from app.schemas.error import ErrorResponseModel
 from app.services.auth_service import AuthService
+from app.settings import settings
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+@router.get("/yandex/login", summary="Redirect to Yandex OAuth")
+async def yandex_login(request: Request):
+    return await oauth.yandex.authorize_redirect(request, settings.yandex_callback_url)
+
+@router.get("/yandex/callback", summary="Yandex OAuth callback")
+async def yandex_callback(
+    request: Request,
+    db_session=Depends(get_db_session),
+):
+    token = await oauth.yandex.authorize_access_token(request)
+    profile = (await oauth.yandex.get("userinfo", token=token)).json()
+
+    auth_service = AuthService(db_session)
+    tokens = await auth_service.login_or_register_via_yandex(
+        yandex_id=profile["id"],
+        email=profile.get("default_email"),
+        login=profile.get("login"),
+    )
+
+    redirect_url = (
+        f"{settings.frontend_url}/auth?"
+        f"access_token={tokens['access_token']}&"
+        f"refresh_token={tokens['refresh_token']}"
+    )
+    return RedirectResponse(redirect_url)
 
 async def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
     return AuthService(db)
