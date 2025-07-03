@@ -3,13 +3,12 @@ from typing import Any, Dict, Union
 from uuid import UUID, uuid4
 
 import structlog
-from jose import jwt
-from passlib.context import CryptContext
-from sqlalchemy.orm import Mapped
-from jose.exceptions import ExpiredSignatureError, JWTError
-
 from app.settings import settings
 from app.utils.cache import redis_client
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError
+from passlib.context import CryptContext
+from sqlalchemy.orm import Mapped
 
 logger = structlog.get_logger(__name__)
 

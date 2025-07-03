@@ -2,21 +2,18 @@ from typing import Any, Dict, List
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException, Request, status
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from jose.exceptions import ExpiredSignatureError, JWTError
-
 from app.core.security import decode_jwt
 from app.db.session import get_db_session
 from app.models import Role, User, UserRole
 from app.schemas.error import ErrorResponseModel
-from app.utils.cache import redis_client
-from app.utils.rate_limiter import RedisLeakyBucketRateLimiter
 from app.settings import settings
-
-from app.utils.rate_limiter import get_rate_limiter
+from app.utils.cache import redis_client
+from app.utils.rate_limiter import (RedisLeakyBucketRateLimiter,
+                                    get_rate_limiter)
+from fastapi import Depends, HTTPException, Request, status
+from jose.exceptions import ExpiredSignatureError, JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 logger = structlog.get_logger(__name__)
 

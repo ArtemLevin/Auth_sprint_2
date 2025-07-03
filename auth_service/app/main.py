@@ -1,17 +1,17 @@
-import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status, Depends
-from fastapi.middleware.cors import CORSMiddleware
 
+import structlog
 from app.api.v1.routes import auth, roles
+from app.core.logging_config import setup_logging
+from app.core.tracing import setup_tracing
+from app.schemas.error import ErrorResponseModel
 from app.settings import settings
 from app.utils.cache import redis_client, test_connection
-from app.core.logging_config import setup_logging
-from app.schemas.error import ErrorResponseModel
 from app.utils.rate_limiter import RedisLeakyBucketRateLimiter
+from fastapi import Depends, FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = structlog.get_logger(__name__)
-
 
 
 @asynccontextmanager
@@ -44,7 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.get("/health", status_code=status.HTTP_200_OK)
 async def health_check():
     return {"status": "ok"}
@@ -52,6 +51,8 @@ async def health_check():
 
 app.include_router(auth.router, prefix=settings.api_v1_str)
 app.include_router(roles.router, prefix=settings.api_v1_str)
+
+setup_tracing(app)
 
 async def get_rate_limiter(request: Request) -> RedisLeakyBucketRateLimiter:
     return request.app.state.rate_limiter

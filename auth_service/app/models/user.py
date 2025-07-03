@@ -1,12 +1,13 @@
 from __future__ import annotations
-from datetime import datetime
-from uuid import UUID as PyUUID, uuid4
-from typing import List
 
-from sqlalchemy import String, Boolean, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime
+from typing import List
+from uuid import UUID as PyUUID
+from uuid import uuid4
 
 from app.models.base import Base
+from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class User(Base):

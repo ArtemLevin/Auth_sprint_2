@@ -1,12 +1,14 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
+import uuid
+
+from app.models.base import Base
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-import uuid
-from app.models.base import Base
 
 
 class LoginHistory(Base):
+    __abstract__ = True
     __tablename__ = "login_history"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

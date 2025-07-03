@@ -1,15 +1,16 @@
-import structlog
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import Response
 from uuid import UUID
 
-from app.db.session import get_db_session
-from app.schemas import LoginRequest, TokenPair, RegisterRequest, LoginHistoryResponse
-from app.services.auth_service import AuthService
-from app.schemas.error import ErrorResponseModel
-from app.schemas.auth import MessageResponse, RefreshToken
+import structlog
 from app.core.dependencies import get_current_user, rate_limit_dependency
+from app.db.session import get_db_session
+from app.schemas import (LoginHistoryResponse, LoginRequest, RegisterRequest,
+                         TokenPair)
+from app.schemas.auth import MessageResponse, RefreshToken
+from app.schemas.error import ErrorResponseModel
+from app.services.auth_service import AuthService
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import Response
 
 logger = structlog.get_logger(__name__)
 

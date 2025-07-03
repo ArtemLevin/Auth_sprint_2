@@ -2,19 +2,17 @@ import datetime
 from uuid import UUID
 
 import structlog
+from app.core.security import (add_to_blacklist, create_access_token,
+                               create_refresh_token, decode_jwt,
+                               get_password_hash, is_token_blacklisted,
+                               verify_password)
+from app.models import LoginHistory, User
+from app.settings import settings
+from app.utils.cache import redis_client
 from jose.exceptions import ExpiredSignatureError, JWTError
+from sqlalchemy import desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import desc, or_
-
-from app.core.security import (create_access_token,
-                                            create_refresh_token,
-                                            get_password_hash, verify_password,
-                                            add_to_blacklist, decode_jwt, is_token_blacklisted)
-from app.models import User, LoginHistory
-from app.settings import settings
-
-from app.utils.cache import redis_client
 
 logger = structlog.get_logger(__name__)
 

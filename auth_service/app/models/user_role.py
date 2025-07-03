@@ -1,8 +1,10 @@
 from __future__ import annotations
+
+from uuid import UUID as PyUUID
+
+from app.models.base import Base
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.base import Base
-from uuid import UUID as PyUUID
 
 
 class UserRole(Base):
