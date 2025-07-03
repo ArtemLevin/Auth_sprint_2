@@ -29,4 +29,5 @@ opentelemetry-instrumentation-fastapi==0.46b0
 opentelemetry-instrumentation-sqlalchemy==0.46b0
 opentelemetry-instrumentation-redis==0.46b0
 authlib>=1.2.0
+python-multipart==0.0.6
 

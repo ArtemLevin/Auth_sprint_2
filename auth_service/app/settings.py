@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     yandex_client_secret: SecretStr = Field(..., env="YANDEX_CLIENT_SECRET")
     yandex_callback_url: str = Field(..., env="YANDEX_CALLBACK_URL")
 
+    session_secret_key: SecretStr = Field( ..., env="SESSION_SECRET_KEY", description="Secret for SessionMiddleware")
+
     jwt_secret_key: SecretStr = Field(..., description="Secret key for access tokens")
     jwt_refresh_secret_key: SecretStr = Field(
         ..., description="Secret key for refresh tokens"

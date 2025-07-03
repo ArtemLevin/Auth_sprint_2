@@ -10,6 +10,7 @@ from app.utils.cache import redis_client, test_connection
 from app.utils.rate_limiter import RedisLeakyBucketRateLimiter
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 logger = structlog.get_logger(__name__)
 
@@ -35,6 +36,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret_key.get_secret_value()
+)
 
 app.add_middleware(
     CORSMiddleware,
