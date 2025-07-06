@@ -1,5 +1,6 @@
 services:
   auth-service:
+    user: root
     build: .
     container_name: auth-service
     ports:
