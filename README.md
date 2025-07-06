@@ -1,4 +1,4 @@
-https://github.com/ArtemLevin/Auth_sprint_1.git
+https://github.com/ArtemLevin/Auth_sprint_2.git
 
 # Запуск сервисов и генерация миграций
 
