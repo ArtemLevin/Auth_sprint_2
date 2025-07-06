@@ -1,11 +1,12 @@
 import asyncio
 
 import click
+from sqlalchemy.future import select
+
 from app.core.security import get_password_hash
 from app.db.session import AsyncDBSession
 from app.models import User
 from app.services.auth_service import AuthService
-from sqlalchemy.future import select
 
 
 @click.group()

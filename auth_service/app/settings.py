@@ -1,14 +1,17 @@
 import os
 from typing import List, Literal
 
-from app.schemas.ratelimiting import (RateLimitConfig, RateLimitConfigDict,
-                                      RoleBasedLimits)
 from dotenv import load_dotenv
 from pydantic import AnyUrl, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings
 
+from app.schemas.oauth_provider import OAuthProvider
+from app.schemas.ratelimiting import (RateLimitConfig, RateLimitConfigDict,
+                                      RoleBasedLimits)
+
 DOTENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 load_dotenv(DOTENV_PATH)
+
 
 class Settings(BaseSettings):
     environment: Literal["development", "test", "staging", "production"] = "development"
@@ -32,7 +35,11 @@ class Settings(BaseSettings):
     yandex_client_secret: SecretStr = Field(..., env="YANDEX_CLIENT_SECRET")
     yandex_callback_url: str = Field(..., env="YANDEX_CALLBACK_URL")
 
-    session_secret_key: SecretStr = Field( ..., env="SESSION_SECRET_KEY", description="Secret for SessionMiddleware")
+    session_secret_key: SecretStr = Field(..., env="SESSION_SECRET_KEY", description="Secret for SessionMiddleware")
+
+    enable_tracer: bool = True
+    jaeger_endpoint: AnyUrl = Field(
+        default="http://jaeger:4318/v1/traces", env="JAEGER_ENDPOINT")
 
     jwt_secret_key: SecretStr = Field(..., description="Secret key for access tokens")
     jwt_refresh_secret_key: SecretStr = Field(
@@ -77,6 +84,19 @@ class Settings(BaseSettings):
         )
     )
 
+    oauth_providers: dict[str, OAuthProvider] = Field(
+        default_factory=lambda: {
+            "yandex": OAuthProvider(
+                client_id=os.getenv("YANDEX_CLIENT_ID"),
+                client_secret=SecretStr(os.getenv("YANDEX_CLIENT_SECRET", "")),
+                authorize_url="https://oauth.yandex.com/authorize",
+                oken_url="https://oauth.yandex.com/token",
+                api_base_url="https://login.yandex.ru/info",
+                callback_url=os.getenv("YANDEX_CALLBACK_URL"),
+            ),
+        }
+    )
+
     @field_validator("database_url", mode="after")
     def check_database_url(cls, v, info):
         if not v.startswith(("postgresql+asyncpg://", "sqlite+aiosqlite://")):
@@ -100,6 +120,7 @@ class Settings(BaseSettings):
         if not url.startswith("redis://"):
             raise ValueError("redis_url должен начинаться с redis://")
         return v
+
 
 settings = Settings()
 

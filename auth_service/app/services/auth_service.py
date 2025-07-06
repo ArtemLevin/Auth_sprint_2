@@ -2,17 +2,19 @@ import datetime
 from uuid import UUID
 
 import structlog
+from jose.exceptions import ExpiredSignatureError, JWTError
+from sqlalchemy import desc, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from app.core.security import (add_to_blacklist, create_access_token,
                                create_refresh_token, decode_jwt, generate_jti,
                                get_password_hash, is_token_blacklisted,
                                verify_password)
 from app.models import LoginHistory, User
+from app.models.social_account import SocialAccount
 from app.settings import settings
 from app.utils.cache import redis_client
-from jose.exceptions import ExpiredSignatureError, JWTError
-from sqlalchemy import desc, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 logger = structlog.get_logger(__name__)
 
@@ -98,28 +100,46 @@ class AuthService:
 
         return success, errors
 
-    async def login_or_register_via_yandex(self, yandex_id: str, email: str | None, login: str) -> dict:
-        result = await self.db_session.execute(
-            select(User).where(User.yandex_id == yandex_id)
+    async def login_or_register_via_oauth(
+        self,
+        provider: str,
+        provider_user_id: str,
+        email: str | None,
+        login: str
+    ) -> dict:
+        sa = await self.db_session.execute(
+            select(SocialAccount)
+            .where(
+                SocialAccount.provider == provider,
+                SocialAccount.provider_user_id == provider_user_id,
+            )
         )
-        user = result.scalars().first()
-        if not user:
+        social_acc = sa.scalars().first()
+        if social_acc:
+            user = social_acc.user
+        else:
             if email:
-                exist = await self.db_session.execute(
-                    select(User).where(User.email == email)
-                )
-                user = exist.scalars().first()
+                res = await self.db_session.execute(select(User).where(User.email == email))
+                user = res.scalars().first()
+            else:
+                user = None
             if not user:
                 user = User(
-                    login=f"{login}_ya",
+                    login=f"{login}_{provider}",
                     email=email,
-                    yandex_id=yandex_id,
-                    password_hash=get_password_hash(generate_jti())
+                    password_hash=get_password_hash(generate_jti()),
                 )
                 self.db_session.add(user)
                 await self.db_session.commit()
                 await self.db_session.refresh(user)
-        access_token = create_access_token(subject=user.id, payload={"login":user.login})
+            sa = SocialAccount(
+                user_id=user.id,
+                provider=provider,
+                provider_user_id=provider_user_id,
+            )
+            self.db_session.add(sa)
+            await self.db_session.commit()
+        access_token = create_access_token(subject=user.id, payload={"login": user.login})
         refresh_token = create_refresh_token(subject=user.id)
         return {"access_token": access_token, "refresh_token": refresh_token}
     

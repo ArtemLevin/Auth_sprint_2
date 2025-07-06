@@ -2,6 +2,7 @@ from .auth import (LoginRequest, MessageResponse, RefreshToken,
                    RegisterRequest, TokenData, TokenPair)
 from .login_history import LoginHistoryResponse
 from .mfa import MFASetupResponse, MFAVerifyRequest, MFAVerifyResponse
+from .oauth_provider import OAuthProvider
 from .permission import (PermissionCheckRequest, PermissionCheckResponse,
                          UserPermissionsResponse)
 from .role import RoleBase, RoleCreate, RoleResponse, RoleUpdate
@@ -28,4 +29,5 @@ __all__ = [
     "MessageResponse",
     "RefreshToken",
     "LoginHistoryResponse",
+    "OAuthProvider",
 ]

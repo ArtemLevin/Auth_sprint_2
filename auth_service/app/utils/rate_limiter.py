@@ -2,11 +2,12 @@ import time
 from typing import List
 
 import structlog
+from redis import asyncio as aioredis
+from redis.commands.json.path import Path
+
 from app.schemas.ratelimiting import (RateLimitConfig, RateLimitConfigDict,
                                       RoleBasedLimits)
 from app.settings import settings
-from redis import asyncio as aioredis
-from redis.commands.json.path import Path
 
 logger = structlog.get_logger(__name__)
 

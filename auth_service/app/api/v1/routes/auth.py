@@ -1,6 +1,10 @@
 from uuid import UUID
 
 import structlog
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import RedirectResponse, Response
+
 from app.core.dependencies import get_current_user, rate_limit_dependency
 from app.core.oauth import oauth
 from app.db.session import get_db_session
@@ -10,42 +14,41 @@ from app.schemas.auth import MessageResponse, RefreshToken
 from app.schemas.error import ErrorResponseModel
 from app.services.auth_service import AuthService
 from app.settings import settings
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import RedirectResponse, Response
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.get("/yandex/login", summary="Redirect to Yandex OAuth")
-async def yandex_login(request: Request):
-    return await oauth.yandex.authorize_redirect(request, settings.yandex_callback_url)
+@router.get("/{provider}/login", summary="Redirect to OAuth provider")
+async def oauth_login(provider: str, request: Request):
+    if provider not in settings.oauth_providers:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not supported")
+    return await oauth.create_client(provider).authorize_redirect(request, settings.oauth_providers[provider].callback_url)
 
-@router.get("/yandex/callback", summary="Yandex OAuth callback")
-async def yandex_callback(
+@router.get("/{provider}/callback", summary="OAuth callback")
+async def oauth_callback(
+    provider: str,
     request: Request,
     db_session=Depends(get_db_session),
 ):
-    token = await oauth.yandex.authorize_access_token(request)
-    profile = (await oauth.yandex.get("userinfo", token=token)).json()
-
+    if provider not in settings.oauth_providers:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Provider not supported")
+    client = oauth.create_client(provider)
+    token = await client.authorize_access_token(request)
+    profile = (await client.get("userinfo", token=token)).json()
     auth_service = AuthService(db_session)
-    tokens = await auth_service.login_or_register_via_yandex(
-        yandex_id=profile["id"],
-        email=profile.get("default_email"),
-        login=profile.get("login"),
+    tokens = await auth_service.login_or_register_via_oauth(
+        provider=provider,
+        provider_user_id=profile["id"],
+        email=profile.get("email"),
+        login=profile.get("login") or profile["id"],
     )
-
     redirect_url = (
         f"{settings.frontend_url}/auth?"
         f"access_token={tokens['access_token']}&"
         f"refresh_token={tokens['refresh_token']}"
     )
     return RedirectResponse(redirect_url)
-
-async def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
-    return AuthService(db)
 
 
 @router.post(

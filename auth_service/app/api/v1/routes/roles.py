@@ -1,6 +1,9 @@
 from uuid import UUID
 
 import structlog
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.dependencies import (get_current_user, rate_limit_dependency,
                                    require_permission)
 from app.db.session import get_db_session
@@ -9,8 +12,6 @@ from app.schemas.error import ErrorResponseModel
 from app.schemas.permission import UserPermissionsResponse
 from app.schemas.role import RoleCreate, RoleResponse, RoleUpdate
 from app.services.role_service import RoleService
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger(__name__)
 

@@ -7,19 +7,19 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from app.settings import settings
+
 
 def setup_tracing(app):
     provider = TracerProvider()
     trace.set_tracer_provider(provider)
 
-    otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4318/v1/traces")
+    otlp_exporter = OTLPSpanExporter(endpoint=settings.jaeger_endpoint)
     span_processor = BatchSpanProcessor(otlp_exporter)
     provider.add_span_processor(span_processor)
 
     FastAPIInstrumentor.instrument_app(app)
-
     SQLAlchemyInstrumentor().instrument()
-
     RedisInstrumentor().instrument()
 
     return app
